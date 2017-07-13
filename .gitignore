@@ -1,2 +1,5 @@
-# Node_Module
-node_module
+# Node_Modules:
+node_modules
+
+# Select Files:
+package-lock.json
