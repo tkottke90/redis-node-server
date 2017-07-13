@@ -6,8 +6,9 @@
         "start": "node index.js"
     },
     "dependencies": {
+        "body-parser": "^1.15.2",
         "express": "^4.15.3",
-        "body-parser": "^1.15.2"
+        "redis": "^2.7.1"
     },
     "devDependencies": {
         "http-proxy-middleware": "^0.17.4"
