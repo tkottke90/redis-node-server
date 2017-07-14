@@ -3,40 +3,43 @@
 // Import Modules
 var express = require('express');
 var redis = require('redis');
+var SMC = require('./Modules/server-message-creator.js')
 
 // Module Variables
 var app = express();
 var client = redis.createClient();
 
+// SMC Methods
+
+
 // Redis Methods
 client.monitor(function(err, res){
-    console.log(`${new Date().toUTCString()} - [Database] - Entering Monitoring Mode`);
+    //console.log(`${new Date().toUTCString()} - [Database] - Entering Monitoring Mode`);
+    console.log(SMC.getMessage(1,null,"DB Monitoring Mode Enabled"))
 });
 
 client.on('connect', function(){
-    console.log(`${new Date().toUTCString()} - [Database] - Redis Client Connected `);
-    
+    //console.log(`${new Date().toUTCString()} - [Database] - Redis Client Connected `);
+    console.log(SMC.getMessage(1,null,`Redis Client Connected`));
+
     client.INFO("stats", function(err, data){
         console.log(data);
     });   
-    
-    console.log(`${new Date().toUTCString()} - [Database] - [SET] - Post Request`)
-    client.set("framework", "NodeJS", function(err, reply){
-        err ? console.log(`${new Date().toUTCString()} - [Database] - [SET] - Error: ${err} `) : console.log(`${new Date().toUTCString()} - [Database] - [SET] - Successful Post `);
-    });
-
 });
 
 client.on('monitor', function(time, args, raw_reply){
-    console.log(`${new Date().toUTCString()} - [Database-Monitor] - ${args}`);
+    //console.log(`${new Date().toUTCString()} - [Database-Monitor] - ${args}`);
+    console.log(SMC.getMessage(3,null,args));
 });
 
 
 // App Methods
 app.get('/', function(req, res){
-    console.log(`${new Date().toUTCString()} - [Server] - Hello World!`);
+    //console.log(`${new Date().toUTCString()} - [Server] - Hello World!`);
+    console.log(SMC.getMessage(0,null,"Connected to Node.JS Server"));
     client.get('framework', function(err, reply){
-        console.log(`${new Date().toUTCString()} - [Database] - [GET] - ${reply}`);
+        //console.log(`${new Date().toUTCString()} - [Database] - [GET] - ${reply}`);
+        console.log(SMC.getMessage(1,0,`${reply}`));
     });
     res.send("Hello World!");
 });
@@ -47,26 +50,5 @@ var server = app.listen(8080, function(){
     var now = new Date().toUTCString();
     var port = server.address().port;
 
-    console.log(`${now} - [Server] - Server started on port: ${port}`)
+    console.log(SMC.getMessage(0,null,`Server started on port: ${port}`));
 });
-
-
-/**
- * Status Message Reference:
- * 
- * Server Message:
- *      `${new Date().toUTCString()} - [Server] -`
- * 
- * Database Message: 
- *      `${new Date().toUTCString()} - [Database] - `
- *      `${new Date().toUTCString()} - [Database] - [GET] - `
- *      `${new Date().toUTCString()} - [Database] - [SET] - `
- *      `${new Date().toUTCString()} - [Database] - [DELETE] - `
- * 
- *      `${new Date().toUTCString()} - [Database-Monitor] - `
- * 
- * Error Message:
- *      Minor -> `${new Date().toUTCString()} - [Error] - `
- *      Sever -> `${new Date().toUTCString()} - [ERROR] - `
- *      Crash -> `${new Date().toUTCString()} - [Crash] -
- */
