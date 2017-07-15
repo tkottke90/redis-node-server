@@ -2,46 +2,78 @@
 
 // Import Modules
 var express = require('express');
+var bparse = require('body-parser');
+var fs = require('fs');
+
 var redis = require('redis');
+
 var SMC = require('./Modules/server-message-creator.js')
 
 // Module Variables
 var app = express();
 var client = redis.createClient();
 
-// SMC Methods
-
-
 // Redis Methods
+
+var status = ['connected', 'disconnected', 'connecting']
+var connectionStatus = "";
+var lastSave = 0;
+
 client.monitor(function(err, res){
-    //console.log(`${new Date().toUTCString()} - [Database] - Entering Monitoring Mode`);
-    console.log(SMC.getMessage(1,null,"DB Monitoring Mode Enabled"))
+    SMC.getMessage(1,null,"DB Monitoring Mode Enabled");
 });
 
-client.on('connect', function(){
-    //console.log(`${new Date().toUTCString()} - [Database] - Redis Client Connected `);
-    console.log(SMC.getMessage(1,null,`Redis Client Connected`));
+client.on('error', function(err){
+    SMC.getMessage(1,5,"Redis Client Error");
+});
 
+client.on('ready', function(){
+    SMC.getMessage(1,null,`Redis Client Connected`);
+    connectionStatus = status[1];
     client.INFO("stats", function(err, data){
         console.log(data);
     });   
 });
 
 client.on('monitor', function(time, args, raw_reply){
-    //console.log(`${new Date().toUTCString()} - [Database-Monitor] - ${args}`);
-    console.log(SMC.getMessage(3,null,args));
-});
+    SMC.getMessage(2,null,args);
+})
 
 
 // App Methods
 app.get('/', function(req, res){
-    //console.log(`${new Date().toUTCString()} - [Server] - Hello World!`);
-    console.log(SMC.getMessage(0,null,"Connected to Node.JS Server"));
-    client.get('framework', function(err, reply){
-        //console.log(`${new Date().toUTCString()} - [Database] - [GET] - ${reply}`);
-        console.log(SMC.getMessage(1,0,`${reply}`));
+    SMC.getMessage(0,null,"Connection Check to Node.JS Server");
+    var nodeVersion = "v7.6.0";
+
+    res.json({
+        "Message" : "Connection Successful",
+        "Server Info" : {
+            "framework" : "Node.JS",
+            "version" : "v7.6.0",
+            "commands" : {
+                "GET_Server_Connection" : "/"
+            }
+        }
     });
-    res.send("Hello World!");
+});
+
+app.get(`/redis/get/:key`,function(req,res){
+    SMC.getMessage(1,0,`request for key: ${req.params.key}`)
+    client.get(req.params.key,function(err, data){
+        if(err){
+            SMC.getMessage(1,5,`Request Error: ${err}`);
+        }
+        if(data == null){
+            SMC.getMessage(1,0,`No key of ${req.params.key} found`);
+            res.send(`No key of ${req.params.key} found`);
+        }
+        else{
+            SMC.getMessage(1,0,`Request Completed for key: ${req.params.key}`);
+            res.send(data);
+        }
+    });
+
+
 });
 
 
@@ -50,5 +82,13 @@ var server = app.listen(8080, function(){
     var now = new Date().toUTCString();
     var port = server.address().port;
 
-    console.log(SMC.getMessage(0,null,`Server started on port: ${port}`));
+    client.set('framework',JSON.stringify({
+        'name' : 'Node.js',
+        'version' : 'v7.6.0'
+        }), function(err, reply){
+        SMC.getMessage(1,null,`${reply}`);
+        if(!err){ client.BGSAVE(); }
+    });
+
+    SMC.getMessage(0,null,`Server started on port: ${port}`);
 });

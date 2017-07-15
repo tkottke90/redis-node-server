@@ -52,9 +52,11 @@ module.exports = {
     getMessage( origin, action, message ){
         var now = new Date().toUTCString();
         if(action != null){       
-            return `${now} - ${originsEnum[origin]} - ${action} - ${message}`;
+            console.log(`${now} - ${originsEnum[origin]} - ${actionEnum[action]} - ${message}`);
+            return `${now} - ${originsEnum[origin]} - ${actionEnum[action]} - ${message}`;
         }
         else{
+            console.log(`${now} - ${originsEnum[origin]} - ${message}`);
             return `${now} - ${originsEnum[origin]} - ${message}`;
         }
     }
@@ -72,7 +74,8 @@ var actionEnum = [
     "[SET]",
     "[PUT]",
     "[POST]",
-    "[DELETE]"
+    "[DELETE]",
+    "[ERROR]"
 ]
 
 // Server
