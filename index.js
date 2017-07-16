@@ -8,12 +8,15 @@ var fs = require('fs');
 var redis = require('redis');
 
 var SMC = require('./Modules/server-message-creator.js')
+var RM = require('./Modules/redis-module.js');
 
 // Module Variables
 var app = express();
 var client = redis.createClient();
 
 // Redis Methods
+
+
 
 var status = ['connected', 'disconnected', 'connecting']
 var connectionStatus = "";
@@ -27,12 +30,19 @@ client.on('error', function(err){
     SMC.getMessage(1,5,"Redis Client Error");
 });
 
+client.on('connect', function(){SMC.getMessage(1,null,"Connecting to Redis DB")});
+
 client.on('ready', function(){
     SMC.getMessage(1,null,`Redis Client Connected`);
+    RM.init();
     connectionStatus = status[1];
-    client.INFO("stats", function(err, data){
-        console.log(data);
-    });   
+    client.INFO("persistence", function(err, data){
+        var output = data.split("\n");
+        for(var i = 0; i < output.length; i++){
+            console.log(`${i}: ${output[i]}`);
+        }
+        console.log(RM.redisStats());
+    });  
 });
 
 client.on('monitor', function(time, args, raw_reply){
@@ -44,10 +54,11 @@ client.on('monitor', function(time, args, raw_reply){
 app.get('/', function(req, res){
     SMC.getMessage(0,null,"Connection Check to Node.JS Server");
     var nodeVersion = "v7.6.0";
-
+    console.log(RM.redisStats());
     res.json({
         "Message" : "Connection Successful",
         "Server Info" : {
+            "port" : server.port,
             "framework" : "Node.JS",
             "version" : "v7.6.0",
             "commands" : {
