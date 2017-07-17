@@ -56,9 +56,53 @@ var root = "";
         });
     });
 
+    /**
+     *  Method will put a new entry into the Redis DB as long as request is formatted propery as JSON Object
+     *  
+     *  { 
+     *      "key" : <key>
+     *      "value" : <value>
+     *      "overwrite" : <boolean>
+     *  }
+     * 
+     */
     app.put(`${root}/redis/put`, function(req, res){
+        SMC.getMessage(1,2,"");
+        var body; // Variable to represent body of request
+        
+        // Check if Request is in JSON
+        if(!req.is('json')){
+            res.jsonp(400, {error: 'Bad Request - JSON Required'});
+            return;
+        }
+        else{
+            console.log(req.body);
+            body = JSON.parse(req.body);
+        }
 
-        SMC.getMessage(1,2,`Request entry for ${}`)
+        // Get Key and Value to be added
+        var key = body.key;
+        var value = body.value;
+        var overwrite = body.overwrite == "true";
+
+        if( key == null ){
+            res.jsonp(400, {error : "No Key Sent"});
+            return;
+        }
+
+        client.exists(key, function(err, data){
+            if(data && overwrite){
+                res.jsonp(409, { error: "Key Already Exists" });
+            }
+            else{
+                client.set(key, value, function(err, data){
+                    if(err){ 
+                        SMC.getMessage(1,5,"Error Adding Value");
+                        res.jsonp(500, {error : 'Error Adding Value'});
+                    }
+                });
+            }
+        });
     });
 
     app.post(`${root}/redis/post`, function(req, res){});
