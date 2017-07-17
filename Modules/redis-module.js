@@ -31,7 +31,7 @@
     var redis_memory_stats = {}
 
 module.exports = {
-
+    client,
 // System Methods
     /**
      * Method calls getStatus Method to update server info in redis_stats
@@ -99,17 +99,7 @@ module.exports = {
                 // Notify user that the command they used was invalid 
                 smc.getMessage(1,null,`${command} is not a valid command for Redis Monitor`);
         }
-    },
-
-// RESTful Methods
-    get(locaiton){},
-
-    post(location, data){},
-
-    put(location, data){},
-
-    delete(){}
-    
+    }    
 }
 
 function refresh(){}
@@ -118,7 +108,7 @@ function refresh(){}
  * Method Triggered on Error from Redis DB
  */
 client.on('error', function(err){
-    smc.getMessage(1,5,"Redis Client Error");
+    smc.getMessage(1,5,"Redis Connection Error");
 });
 
 /**
@@ -170,9 +160,9 @@ function getStatus(){
     client.INFO('persistence', function(err, data){
         data = data.split("\r\n");
         // rdb_last_save_time
-        redis_stats.storage.db_last_save = data[4].split(":")[1];
-        var date = new Date(data[4].split(":")[1]);
-        console.log(`Date = ${date}`);
+        var date = new Date(0);
+        date.setUTCSeconds(data[4].split(":")[1]);
+        redis_stats.storage.db_last_save = date;
         // rdb_chagnes_since_last_save
         redis_stats.storage.db_changes = data[2].split(":")[1];
         // rdb_bgsave_in_progress
