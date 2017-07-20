@@ -14,6 +14,7 @@ var root = "";
 
 // Module Variables
     var app = express();
+    app.use(bparse.json());
     var client = RM.client;
 
 // Redis Methods
@@ -67,18 +68,24 @@ var root = "";
      * 
      */
     app.put(`${root}/redis/put`, function(req, res){
-        SMC.getMessage(1,2,"");
+        // Set Response Header Info
+        res.set('Connection', 'close');
+        console.log(req.headers);
+
         var body; // Variable to represent body of request
         
         // Check if Request is in JSON
         if(!req.is('json')){
+            SMC.getMessage(1,5,"Bad Put Request");
             res.jsonp(400, {error: 'Bad Request - JSON Required'});
             return;
         }
         else{
             console.log(req.body);
-            body = JSON.parse(req.body);
+            body = req.body;
         }
+
+        SMC.getMessage(1,2,`Request to add => ${body.key} : ${body.value}`);
 
         // Get Key and Value to be added
         var key = body.key;
@@ -90,22 +97,36 @@ var root = "";
             return;
         }
 
-        client.exists(key, function(err, data){
-            if(data && overwrite){
-                res.jsonp(409, { error: "Key Already Exists" });
+        client.set(key, value, function(err, data){
+            if(err){ 
+                SMC.getMessage(1,5,"Error Adding Value");
+                res.jsonp(500, {error : 'Error Adding Value'});
             }
-            else{
-                client.set(key, value, function(err, data){
-                    if(err){ 
-                        SMC.getMessage(1,5,"Error Adding Value");
-                        res.jsonp(500, {error : 'Error Adding Value'});
-                    }
-                });
+            else if(data == "OK"){
+                SMC.getMessage(1,2,"Added Successfully");
+                res.jsonp(200, {message: `Added : { ${body.key} : ${body.value} }`});
             }
         });
     });
 
-    app.post(`${root}/redis/post`, function(req, res){});
+    app.post(`${root}/redis/post`, function(req, res){
+        
+
+        // client.exists(key, function(err, data){
+        //     if(data && overwrite){
+        //         SMC.getMessage(1,2,"Key Already Exsists/Overwrite false in reqeust");
+        //         res.jsonp(409, { error: "Key Already Exists" });
+        //     }
+        //     else{
+        //         client.set(key, value, function(err, data){
+        //             if(err){ 
+        //                 SMC.getMessage(1,5,"Error Adding Value");
+        //                 res.jsonp(500, {error : 'Error Adding Value'});
+        //             }
+        //         });
+        //     }
+        // });
+    });
 
     app.delete(`${root}/redis/delete/:id`, function(req, res){});
 
