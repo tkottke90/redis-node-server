@@ -40,6 +40,9 @@ var root = "";
         res.send('OK')
     });
 
+    /**
+     * Method to get value associated with key from Redis DB
+     */
     app.get(`${root}/redis/get/:key`,function(req,res){
         SMC.getMessage(1,0,`request for key: ${req.params.key}`)
         client.get(req.params.key,function(err, data){
@@ -60,6 +63,8 @@ var root = "";
     /**
      *  Method will put a new entry into the Redis DB as long as request is formatted propery as JSON Object
      *  
+     *  Content-Type: application/json
+     * 
      *  { 
      *      "key" : <key>
      *      "value" : <value>
@@ -70,18 +75,16 @@ var root = "";
     app.put(`${root}/redis/put`, function(req, res){
         // Set Response Header Info
         res.set('Connection', 'close');
-        console.log(req.headers);
 
         var body; // Variable to represent body of request
         
-        // Check if Request is in JSON
+        // Check if Request Body is in JSON
         if(!req.is('json')){
             SMC.getMessage(1,5,"Bad Put Request");
             res.jsonp(400, {error: 'Bad Request - JSON Required'});
             return;
         }
         else{
-            console.log(req.body);
             body = req.body;
         }
 
@@ -104,13 +107,72 @@ var root = "";
             }
             else if(data == "OK"){
                 SMC.getMessage(1,2,"Added Successfully");
+                client.BGSAVE();
                 res.jsonp(200, {message: `Added : { ${body.key} : ${body.value} }`});
             }
         });
     });
 
+    /**
+     * Method will post an update to an existing entry or create an entry with the proper request format
+     * 
+     *  Content-Type: application/json
+     * 
+     *  { 
+     *      "key" : <key>
+     *      "value" : <value>
+     *      "overwrite" : <boolean>
+     *  }
+     */
     app.post(`${root}/redis/post`, function(req, res){
+        // Set Response Header Info
+        res.set('Connection', 'close');
+
+        var body; // Variable to represent body of request
         
+        // Check if Request Body is in JSON
+        if(!req.is('json')){
+            SMC.getMessage(1,5,"Bad Put Request");
+            res.jsonp(400, {error: 'Bad Request - JSON Required'});
+            return;
+        }
+        else{
+            body = req.body;
+        }
+
+        SMC.getMessage(1,3,`Request to add => ${body.key} : ${body.value}`);
+
+        // Get Key and Value to be added
+        var key = body.key;
+        var value = body.value;
+        var overwrite = body.overwrite == "true";
+
+        if( key == null ){
+            res.jsonp(400, {error : "No Key Sent"});
+            return;
+        }
+        client.exists(key, function(err, data){
+            var exists = data == 1;
+            console.log(`If Values, data[${exists}] & overwrite[${overwrite}]`)
+
+            if(exists && !overwrite){
+                SMC.getMessage(1,3,"Key Already Exsists/Overwrite false in reqeust");
+                res.status(400).jsonp({ error: "Key Already Exists/Overwrite false in reqeust" });
+            } else {
+                client.set(key, value, function(err, data){
+                    if(err){ 
+                        SMC.getMessage(1,5,"Error Adding Value");
+                        res.jsonp(500, {error : 'Error Adding Value'});
+                    }
+                    else if(data == "OK"){
+                        data ? SMC.getMessage(1,3,`Redis Updated key: ${body.key}`) : SMC.getMessage(1,2,"Added Item Successfully");
+                        client.BGSAVE();
+                        data ? res.status(200).jsonp({message: `Updated key: ${body.key}`}) : res.status(200).jsonp({message: `Added : { ${body.key} : ${body.value} }`});
+                    }
+                });
+            }
+        });
+    }); 
 
         // client.exists(key, function(err, data){
         //     if(data && overwrite){
@@ -126,9 +188,10 @@ var root = "";
         //         });
         //     }
         // });
-    });
 
-    app.delete(`${root}/redis/delete/:id`, function(req, res){});
+    app.delete(`${root}/redis/delete/:id`, function(req, res){
+
+    });
 
 // App Methods
     app.get(`${root}/`, function(req, res){
@@ -148,6 +211,20 @@ var root = "";
         });
     });
 
+    /**
+     * Method uses redis scan command to get a list of keys from redis db
+     */
+    app.get(`${root}/redis/scan`,function(req, res){
+
+        client.scan("0", function(err, data){
+            console.log(data[0]);
+            console.log(data[1]);
+        
+            if(!err){res.send("success");}
+        
+        });
+
+    });
 
 // Server Listener
     var server = app.listen(8080, function(){
