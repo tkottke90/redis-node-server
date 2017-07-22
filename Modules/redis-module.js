@@ -40,6 +40,8 @@ module.exports = {
         getStatus();
     },
 
+    myrefresh(){ refresh(); },
+
     /**
      * Method outputs redis_status object for use elsewhere
      */
@@ -102,7 +104,45 @@ module.exports = {
     }    
 }
 
-function refresh(){}
+/**
+ * Method updates information about Redis, as well as forces a save if it has been
+ * longer than 2 minutes
+ */
+function refresh(){
+    getStatus(function(err, data){
+        var dbLastSave = new Date(data.storage.db_last_save);
+        console.log("dbLastSave: " + dbLastSave.toUTCString());
+        
+        var curTime = new Date();
+        console.log("curTime:    " + curTime.toUTCString());
+
+
+        var time_between = Math.ceil((curTime.valueOf() - dbLastSave.valueOf())/(1000*60));
+        console.log(`Time Between:  ${time_between} minutes`);
+    });
+
+    console.log(`Refresh`);
+    // var lastSave = new Date(redis_stats.storage.db_last_save);
+
+    // // Get Last Server Save Time
+    // client.INFO('persistence', function(err, data){
+    //     // Split data
+    //     data = data.split("\r\n");
+        
+    //     // Get Last Save from Redis
+    //     var date = new Date(0);
+    //     console.log(data[4].split(':')[1]);
+    //     date.setUTCSeconds(data[4].split(':')[1]);
+
+    //     console.log(lastSave);
+    //     console.log(date);
+
+    //     if(lastSave == date){
+
+    //     }
+
+    // });
+}
 
 /**
  * Method Triggered on Error from Redis DB
@@ -115,7 +155,7 @@ client.on('error', function(err){
  * Method Triggered on connection request to Redis DB
  */
 client.on('connect', function(){
-    smc.getMessage(1,null,"Connecting to Redis DB");
+    smc.getMessage(1,null,"Connected to Redis DB");
     getStatus();
 });
 
@@ -128,6 +168,8 @@ client.on('reconnecting', function(){
  */
 client.on('ready', function(){
     smc.getMessage(1,null,`Redis Client Connected`);
+
+    getStatus();
 });
 
 client.on('monitor', function(time, args, raw_reply){
@@ -139,37 +181,78 @@ client.on('monitor', function(time, args, raw_reply){
  * designed to be used to monitor the DB and allow for more advanced analysis of events from the db
  * 
  */
-function getStatus(){
+function getStatus(callback){
+
+    //callback = callback || function(){};
+
     // Server - redis_version, tcp_port,uptime_in_seconds,updtime_in_days
     client.INFO('server',function(err, data){
+        if(err){ response(err,null); }
         data = data.split("\n");
-        redis_stats.redis_version = data[1].split(":")[1].split("\r")[0];
-        redis_stats.port = data[11].split(":")[1].split("\r")[0];
-        redis_stats.uptime.seconds = data[12].split(":")[1].split("\r")[0];
-        redis_stats.uptime.days = data[13].split(":")[1].split("\r")[0];
+        redis_stats.redis_version = data[1].split(":")[1].trim();
+        redis_stats.port = data[11].split(":")[1].trim();
+        redis_stats.uptime.seconds = data[12].split(":")[1].trim();
+        redis_stats.uptime.days = data[13].split(":")[1].trim();
+        _getClients();
     });
     
     // Clients - connected_clients
-    client.INFO('clients', function(err, data){
-        data = data.split("\n");
-        redis_stats.clients_connected = data[1].split(":")[1].split("\r")[0];
-    });
+    function _getClients() {
+        client.INFO('clients', function(err, data){
+            if(err){ response(err,null); }
+
+            data = data.split("\n");
+            redis_stats.clients_connected = data[1].split(":")[1].trim();
+            _getPersis();
+        });
+    }
 
 
     // Persistence - rdb_changes_since_last_save, rdb_bgsave_in_progress, rdb_last_save_time
-    client.INFO('persistence', function(err, data){
-        data = data.split("\r\n");
-        // rdb_last_save_time
-        var date = new Date(0);
-        date.setUTCSeconds(data[4].split(":")[1]);
-        redis_stats.storage.db_last_save = date;
-        // rdb_chagnes_since_last_save
-        redis_stats.storage.db_changes = data[2].split(":")[1];
-        // rdb_bgsave_in_progress
-        data[3].split(":")[1] == 0 ? redis_stats.storage.db_save_status = "idle" : redis_stats.storage.db_save_status = "saving"; 
-        // aof_enabled
-        data[8].split(":")[1] == 1 ? redis_stats.storage.logs_enabled = true : redis_stats.storage.logs_enabled = false;
-        // aof_rewrite_in_progress
-        data[9].split(":")[1] == 1 ? redis_stats.storage.log_status = "saving" : redis_stats.storage.log_status = "idle";
-    });
+    function _getPersis(){
+        client.INFO('persistence', function(err, data){
+            
+            if(err){ response(err,null); }
+
+            data = data.split("\r\n");
+            // rdb_last_save_time
+            var date = new Date(0);
+            date.setUTCSeconds(data[4].split(":")[1]);
+            redis_stats.storage.db_last_save = date;
+            // rdb_chagnes_since_last_save
+            redis_stats.storage.db_changes = data[2].split(":")[1];
+            // rdb_bgsave_in_progress
+            data[3].split(":")[1] == 0 ? redis_stats.storage.db_save_status = "idle" : redis_stats.storage.db_save_status = "saving"; 
+            // aof_enabled
+            data[8].split(":")[1] == 1 ? redis_stats.storage.logs_enabled = true : redis_stats.storage.logs_enabled = false;
+            // aof_rewrite_in_progress
+            data[9].split(":")[1] == 1 ? redis_stats.storage.log_status = "saving" : redis_stats.storage.log_status = "idle";
+        
+            response(null, redis_stats);
+        });
+    }
+
+    function response(err, data){
+        if(typeof callback === "function"){ return callback(err, data); }
+        else { return err != null ? err : "OK"; }
+    }
+
 }   
+
+// Callback testing
+
+function fName(string, callback) {
+
+    if(string != "thomas"){ return callback("Error", null); }
+
+    return callback(null,"charlie");
+}
+
+function lName(string){ 
+
+    console.log("fname = charlie");
+    fName("charlie", function(err, data){
+        err != null ? console.log("Errror") : console.log(data + " kottke");
+    })
+    
+ }
