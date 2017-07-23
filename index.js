@@ -48,6 +48,7 @@ var root = "";
         client.get(req.params.key,function(err, data){
             if(err){
                 SMC.getMessage(1,5,`Request Error: ${err}`);
+                res.status(500).send("Internal Server Error");
             }
             if(data == null){
                 SMC.getMessage(1,0,`No key of ${req.params.key} found`);
@@ -153,7 +154,6 @@ var root = "";
         }
         client.exists(key, function(err, data){
             var exists = data == 1;
-            console.log(`If Values, data[${exists}] & overwrite[${overwrite}]`)
 
             if(exists && !overwrite){
                 SMC.getMessage(1,3,"Key Already Exsists/Overwrite false in reqeust");
@@ -174,23 +174,47 @@ var root = "";
         });
     }); 
 
-        // client.exists(key, function(err, data){
-        //     if(data && overwrite){
-        //         SMC.getMessage(1,2,"Key Already Exsists/Overwrite false in reqeust");
-        //         res.jsonp(409, { error: "Key Already Exists" });
-        //     }
-        //     else{
-        //         client.set(key, value, function(err, data){
-        //             if(err){ 
-        //                 SMC.getMessage(1,5,"Error Adding Value");
-        //                 res.jsonp(500, {error : 'Error Adding Value'});
-        //             }
-        //         });
-        //     }
-        // });
+    /**
+     * Method will "delete" a key from the active Redis DB.  Uses File System Module to 
+     * write key and value to a json doc incase the data was deleted accidentally, it can be recovered.
+     */
+    app.delete(`${root}/redis/delete/:key`, function(req, res){
+        client.get(req.params.key, function(err, data){
+            if(err){ res.status(500).jsonp({ error : "Error in get" }) }
+            
+            if(data != null){
+                // Get Key-Value pair
+                var key = req.params.key;
+                var value = data;
+            
+                // Write deletion to log
+                fs.readFile('./delete_log.json', function(err, data){
+                    // Parse Delete Log
+                    data = JSON.parse(data);
+                    // Get Unique Identifier
+                    var timestamp = new Date().valueOf();
 
-    app.delete(`${root}/redis/delete/:id`, function(req, res){
+                    data["log"][ timestamp ] = { key : key, value : value };
+                
+                    fs.writeFile('./delete_log.json', JSON.stringify(data),function(err, data){
+                        if(err){ 
+                            SMC.getMessage(1,5,"Error Writing to File")
+                            res.status(500).jsonp({ error : "Error deleting key" });
+                        }
+                    });
+                });
 
+                // Delete Key-Value Pair from DB
+                client.del(req.params.key,function(err, data){
+                    if(err){ SMC.getMessage(1,5,"Error Deleting Key"); }
+                    else{ 
+                        SMC.getMessage(1,4,`Deleted ${key} from Redis DB Success`)
+                        res.status(200).jsonp({ success : `Deleted Key: ${key}` }); 
+                    }
+                });
+            }
+            else{ res.status(400).jsonp({ error : `No key of ${req.params.key} found` }); }
+        });
     });
 
 // App Methods
@@ -226,10 +250,35 @@ var root = "";
 
     });
 
+
+// FileSystem Methods
+
+    /**
+     * Method checks to see if Delete Log File exists, if not it creates the file
+     */
+    function createDeleteLog(){
+        fs.exists('./delete_log.json', function(exists){
+            if(!exists){ 
+                
+                // Root Element of Delete Log 
+                var jsonTemplate = {
+                    "log" : {}
+                }
+                fs.writeFile('delete_log.json', JSON.stringify(jsonTemplate), (err, data) => { 
+                    if(err){
+                        console.log(err);
+                    } else { SMC.getMessage(1,null,"delete_log.json file created"); }
+                }); 
+            }
+        });
+    }
+
 // Server Listener
     var server = app.listen(8080, function(){
         var now = new Date().toUTCString();
         var port = server.address().port;
+
+        createDeleteLog();
 
         SMC.getMessage(0,null,`Server started on port: ${port}`);
     });

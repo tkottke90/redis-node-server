@@ -4,3 +4,4 @@ node_modules
 # Select Files:
 package-lock.json
 test.json
+delete_log.json
