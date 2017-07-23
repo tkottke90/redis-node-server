@@ -51,10 +51,10 @@ Path: http://localhost:8080/redis/delete/:key
 < Future Dev >
 
 ## Redis DB:
-### Data Storage:
 - Redis DB is an in-memory data structures server
-## Methods
-### MONITOR DB
+
+### Methods
+#### MONITOR DB
 Method made available by the Redis DB Client Object.  Produces results of any intereactions between the client and the Redis server.  This is made available in this service in the console as part of the log
 
 Start Path: http://localhost:8080/redis/monitor/start
@@ -74,4 +74,5 @@ Examples:
 ## References: 
 
 Redis DB - https://www.redis.io
+
 Tutorials Point on RESTful API Dev: https://www.tutorialspoint.com/restful/restful_introduction.htm
