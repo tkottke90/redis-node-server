@@ -126,7 +126,6 @@ module.exports = {
  * longer than 15 minutes
  */
 function refresh(){
-    console.log("Refresh");
     getStatus(function(err, data){
         // Get time since last save in minutes
         var savediff = Math.ceil(getDateDiff(new Date(data.storage.db_last_save), new Date()) / timeCalc[1] );
@@ -135,6 +134,7 @@ function refresh(){
         var changes = data.storage.db_changes;
 
         if(DEBUG){  
+            smc.getMessage(4,null,`Database Refresh`);
             smc.getMessage(4,null,`DateDiff Time Between: ${ savediff } minutes`);
             smc.getMessage(4,null,`DB Changes: ${changes}`);
         }
@@ -252,6 +252,8 @@ function getStatus(callback){
         });
     }
 
+    // Function handles callback if there is a callback.  If there is no callback
+    // in the function in the call.
     function response(err, data){
         if(typeof callback === "function"){ return callback(err, data); }
         else { return err != null ? err : "OK"; }

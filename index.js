@@ -177,6 +177,9 @@ var root = "";
     /**
      * Method will "delete" a key from the active Redis DB.  Uses File System Module to 
      * write key and value to a json doc incase the data was deleted accidentally, it can be recovered.
+     * 
+     * Once the data has been collected using the Get command, writing the data to the delete log and deleting
+     * from the DB are run as separate as they do not depend on each other to complete
      */
     app.delete(`${root}/redis/delete/:key`, function(req, res){
         client.get(req.params.key, function(err, data){
@@ -193,9 +196,11 @@ var root = "";
                     data = JSON.parse(data);
                     // Get Unique Identifier
                     var timestamp = new Date().valueOf();
-
+                    
+                    // Add deleted key-value pair to data JSON Object
                     data["log"][ timestamp ] = { key : key, value : value };
-                
+                    
+                    // Write back to delete log
                     fs.writeFile('./delete_log.json', JSON.stringify(data),function(err, data){
                         if(err){ 
                             SMC.getMessage(1,5,"Error Writing to File")
@@ -208,7 +213,7 @@ var root = "";
                 client.del(req.params.key,function(err, data){
                     if(err){ SMC.getMessage(1,5,"Error Deleting Key"); }
                     else{ 
-                        SMC.getMessage(1,4,`Deleted ${key} from Redis DB Success`)
+                        SMC.getMessage(1,4,`Deleted "${key}" from Redis DB Success`)
                         res.status(200).jsonp({ success : `Deleted Key: ${key}` }); 
                     }
                 });
@@ -216,6 +221,9 @@ var root = "";
             else{ res.status(400).jsonp({ error : `No key of ${req.params.key} found` }); }
         });
     });
+
+    // Method will return a list of supported operations for the serivce
+    app.get(`${root}/options`, function(req, res){});
 
 // App Methods
     app.get(`${root}/`, function(req, res){
