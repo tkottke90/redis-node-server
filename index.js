@@ -69,7 +69,6 @@ var root = "";
      *  { 
      *      "key" : <key>
      *      "value" : <value>
-     *      "overwrite" : <boolean>
      *  }
      * 
      */
@@ -94,7 +93,6 @@ var root = "";
         // Get Key and Value to be added
         var key = body.key;
         var value = body.value;
-        var overwrite = body.overwrite == "true";
 
         if( key == null ){
             res.jsonp(400, {error : "No Key Sent"});
