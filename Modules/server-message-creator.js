@@ -66,7 +66,8 @@ var originsEnum = [
     "[SERVER]",
     "[DATABASE]",
     "[DATABASE-MONITOR]",
-    "[ERROR]"
+    "[ERROR]",
+    "[DEBUG]"
 ];
 
 var actionEnum = [
@@ -75,7 +76,8 @@ var actionEnum = [
     "[PUT]",
     "[POST]",
     "[DELETE]",
-    "[ERROR]"
+    "[ERROR]",
+    "[SAVING]"
 ]
 
 // Server

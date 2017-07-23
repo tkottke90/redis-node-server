@@ -2,6 +2,7 @@
 
 // Import Modules
     var redis = require('redis');
+    var fs = require('fs');
     var smc = require('./server-message-creator.js');
 
 // Variables
@@ -9,7 +10,21 @@
     var monitor;
     var monitor_status = false;
 
-    // DB Statistics
+    var DEBUG = false;
+
+    // Calculations for converting milliseconds to:
+    // [0] - Seconds
+    // [1] - Minutes
+    // [2] - Hours
+    // [3] - Days
+    var timeCalc = [ (1000), (1000*60), (1000*60*60), (1000*60*60*24) ];
+
+    // Refresh information for 
+    var refresh_config = 1;
+    var refresh_timer;
+    var refresh_rate = refresh_config * timeCalc[1]; // In Minutes
+    
+    // DB Statistics Object
     var redis_stats = {
         "redis_version" : "",
         "port" : "",
@@ -31,16 +46,18 @@
     var redis_memory_stats = {}
 
 module.exports = {
-    client,
+    // Give other modules access to client and redis_stats objects
+    client,redis_stats,
 // System Methods
+
+    debug(){ DEBUG = !DEBUG; },
+
     /**
      * Method calls getStatus Method to update server info in redis_stats
      */
     updateStatus(){
         getStatus();
     },
-
-    myrefresh(){ refresh(); },
 
     /**
      * Method outputs redis_status object for use elsewhere
@@ -106,42 +123,41 @@ module.exports = {
 
 /**
  * Method updates information about Redis, as well as forces a save if it has been
- * longer than 2 minutes
+ * longer than 15 minutes
  */
 function refresh(){
+    console.log("Refresh");
     getStatus(function(err, data){
-        var dbLastSave = new Date(data.storage.db_last_save);
-        console.log("dbLastSave: " + dbLastSave.toUTCString());
-        
-        var curTime = new Date();
-        console.log("curTime:    " + curTime.toUTCString());
+        // Get time since last save in minutes
+        var savediff = Math.ceil(getDateDiff(new Date(data.storage.db_last_save), new Date()) / timeCalc[1] );
 
+        // Get number of changes to DB
+        var changes = data.storage.db_changes;
 
-        var time_between = Math.ceil((curTime.valueOf() - dbLastSave.valueOf())/(1000*60));
-        console.log(`Time Between:  ${time_between} minutes`);
+        if(DEBUG){  
+            smc.getMessage(4,null,`DateDiff Time Between: ${ savediff } minutes`);
+            smc.getMessage(4,null,`DB Changes: ${changes}`);
+        }
+
+        // Backup Database if more than 15 minues has passed or 5 or more changes have been made to the db
+        if(savediff > (15) || changes > 5 ){
+            smc.getMessage(1,6,"Database Backup Started")
+            client.BGSAVE(function(err, res){
+                if(err){ smc.getMessage(1,5,`Error Backing Up Redis: ${err}`); }
+                else { smc.getMessage(1,null,"Backup Complete"); }
+            });
+        }
     });
 
-    console.log(`Refresh`);
-    // var lastSave = new Date(redis_stats.storage.db_last_save);
-
-    // // Get Last Server Save Time
-    // client.INFO('persistence', function(err, data){
-    //     // Split data
-    //     data = data.split("\r\n");
+    // Function calculates the difference between 2 date objects by comparing the objects milliseciond conversion of valueOf()
+    function getDateDiff( date1, date2 ){
+        if(date1 instanceof Date && date2 instanceof Date){
+            var d1 = date1.valueOf(), d2 = date2.valueOf();
         
-    //     // Get Last Save from Redis
-    //     var date = new Date(0);
-    //     console.log(data[4].split(':')[1]);
-    //     date.setUTCSeconds(data[4].split(':')[1]);
-
-    //     console.log(lastSave);
-    //     console.log(date);
-
-    //     if(lastSave == date){
-
-    //     }
-
-    // });
+            return d2 - d1;
+        }
+        else { return 0; }
+    }
 }
 
 /**
@@ -168,8 +184,14 @@ client.on('reconnecting', function(){
  */
 client.on('ready', function(){
     smc.getMessage(1,null,`Redis Client Connected`);
+    getStatus(function(err,data){
+        if(!err){ refresh_timer = setInterval(function(){ refresh() },refresh_rate); }
+        else { smc.getMessage(1,5,`Error in getStatus(): ${err}`) }        
+    })
+});
 
-    getStatus();
+client.on('end', function(){
+    clearInterval(refresh_timer);
 });
 
 client.on('monitor', function(time, args, raw_reply){
@@ -182,8 +204,6 @@ client.on('monitor', function(time, args, raw_reply){
  * 
  */
 function getStatus(callback){
-
-    //callback = callback || function(){};
 
     // Server - redis_version, tcp_port,uptime_in_seconds,updtime_in_days
     client.INFO('server',function(err, data){
@@ -237,22 +257,4 @@ function getStatus(callback){
         else { return err != null ? err : "OK"; }
     }
 
-}   
-
-// Callback testing
-
-function fName(string, callback) {
-
-    if(string != "thomas"){ return callback("Error", null); }
-
-    return callback(null,"charlie");
-}
-
-function lName(string){ 
-
-    console.log("fname = charlie");
-    fName("charlie", function(err, data){
-        err != null ? console.log("Errror") : console.log(data + " kottke");
-    })
-    
- }
+} 
