@@ -22,8 +22,8 @@ Path requires that a JSON object be set in the payload that includes both a key 
 
 Data Structure:
 {
-  key : <Key>,
-  value : <Value
+  key : Key,
+  value : Value
 }
 
 Path: http://localhost:8080/redis/put
@@ -34,9 +34,9 @@ Like the PUT Path, this also requires a JSON object with an included "overwrite"
 
 Data Structure:
 {
-  key : <Key>,
-  value : <Value
-  overwrite: <boolean>
+  key : Key,
+  value : Value
+  overwrite: boolean
 }
 
 
@@ -68,11 +68,12 @@ Module is designed to standardize the logs pushed out to the server with a unifo
 Method returns a standardized method that uses 1 - 2 stored listes as references, then uses a template string to write that information to the console.
 
 Examples: 
-    Sun, 23 Jul 2017 04:02:51 GMT - [SERVER] - Server started on port: 8080
-    Sun, 23 Jul 2017 04:02:53 GMT - [DATABASE] - [ERROR] - Attempting to Reconnect to Redis DB
+
+    - Sun, 23 Jul 2017 04:02:51 GMT - [SERVER] - Server started on port: 8080
+    - Sun, 23 Jul 2017 04:02:53 GMT - [DATABASE] - [ERROR] - Attempting to Reconnect to Redis DB
 
 ## References: 
 
 Redis DB - https://www.redis.io
 
-Tutorials Point on RESTful API Dev: https://www.tutorialspoint.com/restful/restful_introduction.htm
+Tutorials Point on RESTful API Dev  https://www.tutorialspoint.com/restful/restful_introduction.htm
