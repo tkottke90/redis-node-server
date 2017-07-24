@@ -48,17 +48,31 @@ Path will delete a key from the database if it currently exsists there.  As a ba
 Path: http://localhost:8080/redis/delete/:key
 
 ### OPTIONS
-< Future Dev >
+Path will send a list of options available to the user from this service
+
+http://localhost:8080/options
+
+### OPTIONS/SET
+Path uses a PUT command to allow the user to set various preferences in the webserver by passing uri params
+
+Current Options Available:
+ 
+  - DEBUG
+    - Enables/Disables the logging of various debug level information in the Services Runtime Log
+  
+  - Monitor
+    - Enables/Disables the logging of database level monitoring data
 
 ## Redis DB:
-- Redis DB is an in-memory data structures server
+Redis DB is an in-memory data structures server
 
 ### Methods
 #### MONITOR DB
 Method made available by the Redis DB Client Object.  Produces results of any intereactions between the client and the Redis server.  This is made available in this service in the console as part of the log
 
-Start Path: http://localhost:8080/redis/monitor/start
-End Path: http://localhost:8080/redis/monitor/end
+Start Path: http://localhost:8080/options/set/monitor.start
+
+End Path: http://localhost:8080/options/set/monitor.shutdown
 
 ## Other Modules:
 ### Server Message Creator:
