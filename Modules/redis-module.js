@@ -10,7 +10,7 @@
     var monitor;
     var monitor_status = false;
 
-    var DEBUG = false;
+    var DEBUG = true;
 
     // Calculations for converting milliseconds to:
     // [0] - Seconds
@@ -46,11 +46,11 @@
     var redis_memory_stats = {}
 
 module.exports = {
-    // Give other modules access to client and redis_stats objects
-    client,redis_stats,
+    // Give other modules access to client and redis_stats objects, as well as DEBUG variable for options
+    client,redis_stats,DEBUG,
 // System Methods
 
-    debug(){ DEBUG = !DEBUG; },
+    setDEBUG(d){ DEBUG = d; },
 
     /**
      * Method calls getStatus Method to update server info in redis_stats
@@ -71,7 +71,7 @@ module.exports = {
      * the monitoring feature is resource expensive and can hider the processing speed of the DB
      * @param {string} command 
      */
-    redisMonitor(command){
+    redisMonitor(command, callback){
         // Array of accepted states for moitoring
         var commands = [ "start", "shutdown" ];
 
@@ -90,7 +90,7 @@ module.exports = {
                     // Set Current Monitor Status
                     monitor_status = "start";
                     // Return OK if all commands are suggessful
-                    return "OK";
+                    if(typeof callback == "function") { return callback(null,"OK") };
                 });
                 break;
             case commands[1]: // Shutdown Monitoring
@@ -110,13 +110,14 @@ module.exports = {
                         // Restart redis connection
                         client = redis.createClient();
 
-                        return "OK";
+                         if(typeof callback == "function") { return callback(null,"OK") };
                     }
                 });
                 break;
             default:
                 // Notify user that the command they used was invalid 
                 smc.getMessage(1,null,`${command} is not a valid command for Redis Monitor`);
+                 if(typeof callback == "function") { return callback("Invalid Command",null) };
         }
     }    
 }
