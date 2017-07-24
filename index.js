@@ -17,7 +17,20 @@ var root = "";
     app.use(bparse.json());
     var client = RM.client;
 
-// Redis Methods
+// RESTful API
+
+    var options = 
+    {
+        "DEBUG" : {
+            "description" : "Enable/Disable Debug Messaging in Service Log",
+            "accepted_values" : [ "true", "false" ]
+        },
+        "monitor" : {
+            "descriptions" : "Enable/Disable Redis Monitor in Service Log",
+            "accepted_values" : [ "start", "shutdown" ]
+        }
+    }
+
     /**
      * Method used to start monitoring of Redis DB
      * 
@@ -221,9 +234,56 @@ var root = "";
     });
 
     // Method will return a list of supported operations for the serivce
-    app.get(`${root}/options`, function(req, res){});
+    app.get(`${root}/options`, function(req, res){
+        res.status(200).json(options);
+    });
+
+    // Method will update option in key
+    app.put(`${root}/options/set/:option.:value`, function(req, res){
+        var option = req.params.option;
+        var val = req.params.value;
+
+        res.set('Connection', 'close');
+
+        switch(option){
+            case "DEBUG":
+                switch(val){
+                    case "true":
+                        SMC.getMessage(0,null,"DEBUG Enabled");
+                        RM.setDEBUG(true);
+                        console.log(RM.DEBUG);
+                        res.status(200).jsonp({ success : "Debugging Enabled"});
+                        break;
+                    case "false":
+                        SMC.getMessage(0,null,"DEBUG Disabled");
+                        RM.setDEBUG(false);
+                        res.status(200).jsonp({ success : "Debugging Disabled"});
+                        break;
+                    default:
+                        SMC.getMessage(0,null,"Attempt to Edit DEBUG Option Failed");
+                        res.status(400).jsonp({ error : "Incorrect value for DEBUG option, see /options for accepted inputs" });
+                }
+                break;
+            case "monitor":
+                if(val == "start" || val == "shutdown"){
+                    RM.redisMonitor(val,function(err, resp){
+                        resp == "OK" ? res.status(200).send('OK') : res.send(resp);
+                        resp == "OK" ? val == "start" ? SMC.getMessage(1,null,"Database Monitoring Enabled") :SMC.getMessage(1,null,"Database Monitoring Disabled") : SMC.getMessage(1,5,"Error Enabling Redis Monitor " + resp);
+               
+                    });
+                }
+                else{
+                    res.status(400).jsonp({ errror : "Incorrect value for monitor option, see /options for accepted inputs"});
+                }
+                break;
+            default:
+                res.status(400).jsonp({ error : `No Option of ${option} found, please run /options to view list of available options`});
+        }
+    });
+
 
 // App Methods
+
     app.get(`${root}/`, function(req, res){
         SMC.getMessage(0,null,"Connection Check to Redis-Node.JS Server");
         var nodeVersion = "v7.6.0";

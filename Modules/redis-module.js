@@ -82,34 +82,35 @@ module.exports = {
                 if(monitor_status == "start"){ return "Monitoring Already Running!"; }
                 
                 // Setup client to monitor DB actions
-                monitor = client.monitor(function(err, res){
+                monitor = redis.createClient();
+
+                monitor.on('monitor', function(time, args, raw_reply){
+                    smc.getMessage(2,null,`${args}`)
+                });
+
+                monitor.monitor(function(err, res){
                     // Log Error if there is one
                     if(err){ smc.getMessage(3,5,"Error Starting Monitoring!"); }
-                    // Log Action
-                    smc.getMessage(1,null,"DB Monitoring Mode Enabled");
                     // Set Current Monitor Status
                     monitor_status = "start";
                     // Return OK if all commands are suggessful
-                    if(typeof callback == "function") { return callback(null,"OK") };
+                    if(typeof callback == "function") { return callback(null,"OK") } else { return null };
                 });
                 break;
             case commands[1]: // Shutdown Monitoring
                 // If monitoring is not running, inform the user that it cant be stopped
                 if(monitor_status == "shutdown"){ return "Monitoring Not Running!"; }
                 // Log Action
-                smc.getMessage(2,null,"Closing Monitoring Session, Connection Restarting");
-                // Reset monitor variable
-                monitor = null;
+                smc.getMessage(2,null,"Closing Monitoring Session");
                 // Currently (Redis v3.0) to close monitoring the client session must be disconnected
-                client.quit(function(err, res){
+                monitor.quit(function(err, res){
                     // Log Error during shutdown
                     if(err){ smc.getMessage(3,5,"Error Shutting Down Monitoring!"); }
                     if(res == "OK"){ 
                         // If quit successful, set monitor_status
                         monitor_status = "shutdown";
                         // Restart redis connection
-                        client = redis.createClient();
-
+                        monitor = null;
                          if(typeof callback == "function") { return callback(null,"OK") };
                     }
                 });
@@ -193,10 +194,6 @@ client.on('ready', function(){
 
 client.on('end', function(){
     clearInterval(refresh_timer);
-});
-
-client.on('monitor', function(time, args, raw_reply){
-    smc.getMessage(2,null,`${args}`)
 });
 
 /**
