@@ -57,7 +57,23 @@ var root = "";
      * Method to get value assodiated with key from Redis DB as a JSON Object
      */
     app.get(`${root}/redis/get/json/:key`, function(req, res){
-        
+        // Get param variables
+        var key = req.params.key;
+
+        SMC.getMessage(1,0,`Request for key: ${key}`)
+        client.get(key,function(err, data){
+            if(err){
+                SMC.getMessage(1,5,`Error in GET Request: ${err}`);
+                res.status(500).jsonp({error : "Error in DB Request"});
+            } else {
+                var jsonOut = {};
+                jsonOut[key] = data;
+
+                SMC.getMessage(1,0,`Request Completed for ${key}`)
+                res.status(200).jsonp(jsonOut);
+            }
+        });
+
         //
         // TO-DO
         //
@@ -68,7 +84,7 @@ var root = "";
      * Method to get value associated with key from Redis DB
      */
     app.get(`${root}/redis/get/:key`,function(req,res){
-        SMC.getMessage(1,0,`request for key: ${req.params.key}`)
+        SMC.getMessage(1,0,`Request for key: ${req.params.key}`)
         client.get(req.params.key,function(err, data){
             if(err){
                 SMC.getMessage(1,5,`Request Error: ${err}`);
@@ -175,7 +191,7 @@ var root = "";
      *      "overwrite" : <boolean>
      *  }
      */
-    app.post(`${root}/redis/post`, function(req, res){
+    app.post(`${root}/redis/post/json`, function(req, res){
         // Set Response Header Info
         res.set('Connection', 'close');
 
@@ -223,6 +239,12 @@ var root = "";
             }
         });
     }); 
+
+    app.post(`${root}/redis/post/:key.:value.:overwrite`, function(req, res){
+        //
+        // TO-DO
+        //
+    });
 
     /**
      * Method will "delete" a key from the active Redis DB.  Uses File System Module to 
