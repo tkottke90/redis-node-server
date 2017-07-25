@@ -54,6 +54,17 @@ var root = "";
     });
 
     /**
+     * Method to get value assodiated with key from Redis DB as a JSON Object
+     */
+    app.get(`${root}/redis/get/json/:key`, function(req, res){
+        
+        //
+        // TO-DO
+        //
+
+    });
+
+    /**
      * Method to get value associated with key from Redis DB
      */
     app.get(`${root}/redis/get/:key`,function(req,res){
@@ -85,7 +96,7 @@ var root = "";
      *  }
      * 
      */
-    app.put(`${root}/redis/put`, function(req, res){
+    app.put(`${root}/redis/put/json`, function(req, res){
         // Set Response Header Info
         res.set('Connection', 'close');
 
@@ -123,6 +134,34 @@ var root = "";
                 res.jsonp(200, {message: `Added : { ${body.key} : ${body.value} }`});
             }
         });
+    });
+
+
+    /**
+     * Method will put a new entry into the Redis DB from the new information in the uri
+     */
+    app.put(`${root}/redis/put/:key.:value`, function(req,res){
+        
+        res.set('Connection', 'close');
+        
+        // Get Values from URI
+        var key = req.params.key;
+        var value = req.params.value;
+
+        if(key != null){
+            client.set(key, value, function(err, data){
+                if(err){
+                    SMC.getMessage(1,5,`Error in PUT Request: ${err}`);
+                    res.status(500).jsonp({error : `Bad Request: ${err}`});                    
+                } else {
+                    SMC.getMessage(1,2,`PUT Requst Successful`);
+                    res.status(200).jsonp({ success : `PUT Request - Key: ${key}, Value: ${value}` });
+                }
+            });
+        }else{
+            SMC.getMessage(1,5,"Error in PUT Request: Bad/No Key");
+            res.status(400).jsonp({error : "Bad Request: no Key included"});
+        }
     });
 
     /**
@@ -238,6 +277,8 @@ var root = "";
         res.status(200).json(options);
     });
 
+    app.put(`${root}/options/set`, function(req,res){});
+
     // Method will update option in key
     app.put(`${root}/options/set/:option.:value`, function(req, res){
         var option = req.params.option;
@@ -251,7 +292,6 @@ var root = "";
                     case "true":
                         SMC.getMessage(0,null,"DEBUG Enabled");
                         RM.setDEBUG(true);
-                        console.log(RM.DEBUG);
                         res.status(200).jsonp({ success : "Debugging Enabled"});
                         break;
                     case "false":
@@ -330,11 +370,8 @@ var root = "";
                 var jsonTemplate = {
                     "log" : {}
                 }
-                fs.writeFile('delete_log.json', JSON.stringify(jsonTemplate), (err, data) => { 
-                    if(err){
-                        console.log(err);
-                    } else { SMC.getMessage(1,null,"delete_log.json file created"); }
-                }); 
+                fs.writeFileSync('delete_log.json', JSON.stringify(jsonTemplate));
+                SMC.getMessage(1,null,`delete_log.json file created`);
             }
         });
     }
@@ -343,6 +380,8 @@ var root = "";
     var server = app.listen(8080, function(){
         var now = new Date().toUTCString();
         var port = server.address().port;
+
+        RM.setDEBUG(false);
 
         createDeleteLog();
 
