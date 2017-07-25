@@ -5,6 +5,7 @@ RESTful Backend design using ExpressJS, Node.js, and Redis DB.
 Web Serivce allows user to store, retrieve, update, and delete key-value pairs from a stand alone Redis DB
 
 
+
 ## Node.js Methods:
 
 ### GET Root:
@@ -35,7 +36,7 @@ Like the PUT Path, this also requires a JSON object with an included "overwrite"
 Data Structure:
 {
   key : Key,
-  value : Value
+  value : Value,
   overwrite: boolean
 }
 
