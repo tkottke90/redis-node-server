@@ -10,7 +10,7 @@
     var monitor;
     var monitor_status = false;
 
-    var DEBUG = true;
+    var DEBUG;
 
     // Calculations for converting milliseconds to:
     // [0] - Seconds
@@ -47,7 +47,7 @@
 
 module.exports = {
     // Give other modules access to client and redis_stats objects, as well as DEBUG variable for options
-    client,redis_stats,DEBUG,
+    client,redis_stats,
 // System Methods
 
     setDEBUG(d){ DEBUG = d; },
