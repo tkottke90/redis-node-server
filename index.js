@@ -73,11 +73,6 @@ var root = "";
                 res.status(200).jsonp(jsonOut);
             }
         });
-
-        //
-        // TO-DO
-        //
-
     });
 
     /**
@@ -159,7 +154,8 @@ var root = "";
     app.put(`${root}/redis/put/:key.:value`, function(req,res){
         
         res.set('Connection', 'close');
-        
+        SMC.getMessage(1,2,`Request to add => ${body.key} : ${body.value}`);
+
         // Get Values from URI
         var key = req.params.key;
         var value = req.params.value;
@@ -241,9 +237,30 @@ var root = "";
     }); 
 
     app.post(`${root}/redis/post/:key.:value.:overwrite`, function(req, res){
-        //
-        // TO-DO
-        //
+        SMC.getMessage(1,3,`Request to add => ${body.key} : ${body.value}`);
+        // Get Values from URI
+        var key = req.params.key, 
+            value = req.params.value, 
+            over = req.params.overwrite == "true";
+
+        client.exists(key,function(err, data){
+            var exists = data == 1;
+            if(data && over){
+                SMC.getMessage(1,3,"Key Already Exsists/Overwrite false in reqeust");
+                res.status(400).jsonp({ error: "Key Already Exists/Overwrite false in reqeust" });
+            } else{
+            client.set(key, value, function(err, data){
+                if(err){ 
+                    SMC.getMessage(1,5,"Error Adding Value");
+                    res.jsonp(500, {error : 'Error Adding Value'});
+                } else if(data == "OK"){
+                    data ? SMC.getMessage(1,3,`Redis Updated key: ${body.key}`) : SMC.getMessage(1,2,"Added Item Successfully");
+                    client.BGSAVE();
+                    data ? res.status(200).jsonp({message: `Updated key: ${body.key}`}) : res.status(200).jsonp({message: `Added : { ${body.key} : ${body.value} }`});
+                }
+            });
+
+        
     });
 
     /**
