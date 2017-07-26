@@ -77,7 +77,8 @@ var actionEnum = [
     "[POST]",
     "[DELETE]",
     "[ERROR]",
-    "[SAVING]"
+    "[SAVING]",
+    "[NOTICE]"
 ]
 
 // Server

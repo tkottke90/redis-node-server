@@ -11,6 +11,7 @@ var root = "";
 
     var SMC = require('./Modules/server-message-creator.js')
     var RM = require('./Modules/redis-module.js');
+    var auth = require('./Modules/auth-module.js');
 
 // Module Variables
     var app = express();
@@ -423,6 +424,11 @@ var root = "";
         RM.setDEBUG(false);
 
         createDeleteLog();
+
+        // Test
+            
+
+        //
 
         SMC.getMessage(0,null,`Server started on port: ${port}`);
     });
