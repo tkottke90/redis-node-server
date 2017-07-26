@@ -31,6 +31,8 @@ var key_template = {
     "root" : {}
 }
 
+var temp_keys = [];
+
 // Variables
     var client = redis.client;
 
@@ -38,6 +40,7 @@ module.exports = {
 
     keyRequest(){},
 
+    // Generates a New Key and adds it to the Redis DB and returns the key
     newKey(email, password, callback){
         var key, counter = 0;
         do{
@@ -68,23 +71,24 @@ module.exports = {
         });
     },
 
-    newTempKey(){},
+    newTempKey(email, password, timespan, callback){
+        timespan = new Date()
+        
+        newKey(email, password, function(err, key){
+            client.get(key, function(err, data){
+                data = JSON.parse(data);
+
+                data['deleteDate']
+
+            })
+        });
+    },
 
     // Verify Key Exists and Password is correct
     authKey(){},
 
 
 }
-
-
-// Auth Methods
-    // New
-
-    // Existing
-
-    // Temporary
-
-    // Remove
 
 // Key Processing
     // Create New Key
@@ -103,7 +107,6 @@ module.exports = {
                 smc.getMessage(0,5,`Error Checking Key Exists: ${err}`)
                 return false;
             }
-            
             return exists == 0;
         });
     }
