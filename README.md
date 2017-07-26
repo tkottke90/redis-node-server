@@ -14,12 +14,14 @@ Path returns information about the connection and logs the attempt to the server
 Path: http://localhost:8080/
 
 ### GET Key
-Path returns the value of the key in the uri request if a key is found, returns no key if no key with that name is listed in the redis db
+Path returns the value of the key in the uri request if a key is found, returns no key if no key with that name is listed in the redis db.  If the JSON path is used, then the key and value is returned as a JSON object
 
-Path: http://localhost:8080/redis/get/:key
+GET String Value Path: http://localhost:8080/redis/get/:key
+
+GET JSON Object Path: http://localhost8080/redis/get/json/:key
 
 ### PUT
-Path requires that a JSON object be set in the payload that includes both a key and a value.  The service will then add the information to the Redis DB.  This method is does not check first if there is already an object and it is up to the user to either first check or use the POST path to confirm that the key is not overwriting previous data.
+Path requires that a JSON object be set in the payload that includes both a key and a value or the key/value pair in the uri as parameters.  The service will then add the information to the Redis DB.  This method is does not check first if there is already an object and it is up to the user to either first check or use the POST path to confirm that the key is not overwriting previous data.
 
 Data Structure:
 {
@@ -27,11 +29,12 @@ Data Structure:
   value : Value
 }
 
-Path: http://localhost:8080/redis/put
+PUT JSON Path: http://localhost:8080/redis/put/json
+
+PUT URI Path: http://localhost8080/redis/put/:key.:value
 
 ### POST
-Like the PUT Path, this also requires a JSON object with an included "overwrite" field that contains a boolean.  If this value is true, any pre-existing key will be overwritten, otherwise the service will return that a key already exists.
-
+Like the PUT Path, this also requires a JSON object or include the values in the uri, with an included "overwrite" field/parameter that contains a boolean.  If this value is true, any pre-existing key will be overwritten, otherwise the service will return that a key already exists.
 
 Data Structure:
 {
