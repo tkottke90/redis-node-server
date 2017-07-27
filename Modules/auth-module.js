@@ -31,6 +31,9 @@ var key_template = {
     "root" : {}
 }
 
+var redis_key_ref = "key_ref"
+var redis_temp_keys = "temp_key_ref";
+var key_ref = [];
 var temp_keys = [];
 
 // Variables
@@ -42,7 +45,7 @@ module.exports = {
 
     // Generates a New Key and adds it to the Redis DB and returns the key
     newKey(email, password, callback){
-        var key, counter = 0;
+        var key = "", counter = 0;
         do{
             key = generateKey(26);
             counter++;
@@ -52,43 +55,110 @@ module.exports = {
             }
         }while(keyExsists(key));
 
-        var value = key_template;
-        value["createDate"] = new Date().valueOf();
-        value["lastChangeDate"] = new Date().valueOf();
-        value["requester_Email"] = email;
-        value["password"] = password;
+        var value = {  };
 
-        client.set(key,JSON.stringify(value),function(err, res){
+        client.hmset(key,
+            [
+                'name', '',
+                'User_Email', email,
+                'password', password,
+                'expire', '-1',
+                "Date_Create", new Date().valueOf().toString(),
+                "Date_Last_Mod", new Date().valueOf().toString(),
+                "Data", JSON.stringify(value)
+            ],
+            function(err, res){
             if(err){
                 smc.getMessage(1,5,`Error Generating Key: \n ${err}`);
                 if(typeof callback == 'function') {return callback(err, null);}
-                else { return "OK"; }
+                else { return "Error"; }
             }
             
+            client.SADD(redis_key_ref, [key],function(err,res){
+                if(err){ console.log(err); }
+            });
+
             smc.getMessage(1,null,`New Key Added: ${key}`);
             if(typeof callback == 'function') {return callback(null, key);}
             else { return "OK"; }
         });
     },
 
-    newTempKey(email, password, timespan, callback){
-        timespan = new Date()
+    /**
+     * Method take addition paramter than newKey() that is the expiration of the key if the project only needs the key temporarily
+     * @param {string} email - String of users email address.  This will come from the request and is passed as a reference to the user 
+     * @param {string} password (Optional) - Password to protect information stored by this key
+     * @param {number} expiration - Number represting the Millisecond timestamp of when the key will expire.  Can be gathered by using the Date.valueOf() method
+     * @param {function} callback - Child Process' are asynchronous, this method inherits that attribute 
+     */
+    newTempKey(email, password, expiration, callback){
+        var mod = new Date().valueOf();
+
+        var testDate = new Date(expiration);
+        console.log(testDate.toUTCString());
         
-        newKey(email, password, function(err, key){
-            client.get(key, function(err, data){
-                data = JSON.parse(data);
+        this.newKey(email, password, function(err, key){
+            if(err){ smc.getMessage(1,5,`Error Creating New Key: ${err}`);  if(typeof callback == "function"){ return callback(err,null) } }
+                client.HMSET(key,{ "expire" : expiration, "Date_Last_Mod" : mod }, function(err){
+                    if(err) { smc.getMessage(1,5,`Error setting key expireation: ${err}`); }
+                    else { 
+                        // Calculate time till expire
+                        client.expireat(key,expiration,function(err){ if(err){ smc.getMessage(1,5,`Error setting expireation on key: ${key} to ${expiration}`); } });
 
-                data['deleteDate']
 
-            })
+                        client.SADD(redis_temp_keys,[key], function(err){
+                            if(err){ smc.getMessage(1,5,`Error adding key to temp_ref set: ${err}`); }
+                        });
+
+                        if(typeof callback == "function"){ return callback(null, key) }
+                    }
+                });
         });
     },
 
     // Verify Key Exists and Password is correct
     authKey(){},
 
+    // Request to remove a key
+    deleteKeyReq(key, password){
+        
+    }
+
 
 }
+
+client.once('ready',function(err){
+    if(err) { throw err; }
+    // Check for Key Reference List
+    client.exists(redis_key_ref, function(err, data){
+        if(err) { smc.getMessage(1,5,`Error Accessing Keys: ${err}`); 
+        } else if(data == 0) {
+            key_ref = [];
+        } else {
+            client.SMEMBERS(redis_key_ref, function(err, data){
+                if(err){ smc.getMessage(1,5,"Error getting key set"); }
+                else {
+                    key_ref = data;
+                }
+            });
+        }
+    });
+
+    // Check for Temporary Key Reference List
+    client.exists(redis_temp_keys,function(err, data){
+        if(err) { smc.getMessage(1,5,`Error Accessing Temp_Keys: ${err}`); }
+        else if(data == 0) {
+            key_ref = [];
+        } else {
+            client.SMEMBERS(redis_temp_keys, function(err, data){
+                if(err) { smc.getMessage(1,5,`Error getting Temp_Keys: ${err}`); }
+                else { 
+                    temp_keys = data;
+                }
+            });          
+        }
+    });
+});
 
 // Key Processing
     // Create New Key

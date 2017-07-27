@@ -426,7 +426,11 @@ var root = "";
         createDeleteLog();
 
         // Test
-            
+            var expDate = new Date(2017,6,26,14,29).valueOf();
+            auth.newTempKey('altotom90@gmail.com',"thomas90",expDate,function(err){
+                if(err){ SMC.getMessage(1,5,`Error adding new Temporary Key: ${err}`); }
+            });
+
 
         //
 
