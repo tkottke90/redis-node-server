@@ -166,7 +166,7 @@ function refresh(){
  * Method Triggered on Error from Redis DB
  */
 client.on('error', function(err){
-    smc.getMessage(1,5,"Redis Connection Error");
+    smc.getMessage(1,5,`Redis Error: ${err.message}`);
 });
 
 /**
