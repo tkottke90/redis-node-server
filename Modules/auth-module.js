@@ -73,14 +73,15 @@ module.exports = {
                 if(typeof callback == 'function') {return callback(err, null);}
                 else { return "Error"; }
             }
-            
-            client.SADD(redis_key_ref, [key],function(err,res){
-                if(err){ console.log(err); }
-            });
+            else {
+                client.SADD(redis_key_ref, [key],function(err,res){
+                    if(err){ console.log(err); }
+                });
 
-            smc.getMessage(1,null,`New Key Added: ${key}`);
-            if(typeof callback == 'function') {return callback(null, key);}
-            else { return "OK"; }
+                smc.getMessage(1,null,`New Key Added: ${key}`);
+                if(typeof callback == 'function') {return callback(null, key);}
+                else { return "OK"; }
+            }
         });
     },
 
@@ -94,16 +95,20 @@ module.exports = {
     newTempKey(email, password, expiration, callback){
         var mod = new Date().valueOf();
 
-        var testDate = new Date(expiration);
-        console.log(testDate.toUTCString());
-        
+        expire = Math.ceil(getDateDiff(new Date(expiration), new Date()) / 1000);
+        console.log(expiration);
+        console.log(new Date().valueOf());
+        console.log(new Date(expiration).toLocaleTimeString());
+        console.log(expire);
+
         this.newKey(email, password, function(err, key){
+            console.log(key);
             if(err){ smc.getMessage(1,5,`Error Creating New Key: ${err}`);  if(typeof callback == "function"){ return callback(err,null) } }
                 client.HMSET(key,{ "expire" : expiration, "Date_Last_Mod" : mod }, function(err){
                     if(err) { smc.getMessage(1,5,`Error setting key expireation: ${err}`); }
                     else { 
                         // Calculate time till expire
-                        client.expireat(key,expiration,function(err){ if(err){ smc.getMessage(1,5,`Error setting expireation on key: ${key} to ${expiration}`); } });
+                        client.EXPIRE(key,expire,function(err){ if(err){ smc.getMessage(1,5,`Error setting expireation on key: ${key} to ${expiration}`); } });
 
 
                         client.SADD(redis_temp_keys,[key], function(err){
@@ -183,3 +188,13 @@ client.once('ready',function(err){
 
     // Remove Key
     function removeKey(){}
+
+    // Utility Module
+    function getDateDiff( date1, date2 ){
+        if(date1 instanceof Date && date2 instanceof Date){
+            var d1 = date1.valueOf(), d2 = date2.valueOf();
+        
+            return d1 - d2;
+        }
+        else { return 0; }
+    }
