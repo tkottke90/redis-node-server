@@ -69,7 +69,6 @@ module.exports = {
             ],
             function(err, res){
             if(err){
-                smc.getMessage(1,5,`Error Generating Key: \n ${err}`);
                 if(typeof callback == 'function') {return callback(err, null);}
                 else { return "Error"; }
             }
@@ -103,16 +102,16 @@ module.exports = {
 
         this.newKey(email, password, function(err, key){
             console.log(key);
-            if(err){ smc.getMessage(1,5,`Error Creating New Key: ${err}`);  if(typeof callback == "function"){ return callback(err,null) } }
+            if(err){ if(typeof callback == "function"){ return callback(err,null) } }
                 client.HMSET(key,{ "expire" : expiration, "Date_Last_Mod" : mod }, function(err){
-                    if(err) { smc.getMessage(1,5,`Error setting key expireation: ${err}`); }
+                    if(err) { if(typeof callback == "function"){ return callback(err,null) } }
                     else { 
                         // Calculate time till expire
                         client.EXPIRE(key,expire,function(err){ if(err){ smc.getMessage(1,5,`Error setting expireation on key: ${key} to ${expiration}`); } });
 
 
                         client.SADD(redis_temp_keys,[key], function(err){
-                            if(err){ smc.getMessage(1,5,`Error adding key to temp_ref set: ${err}`); }
+                            if(err){ if(typeof callback == "function"){ return callback(err,null) } }
                         });
 
                         if(typeof callback == "function"){ return callback(null, key) }
@@ -122,7 +121,16 @@ module.exports = {
     },
 
     // Verify Key Exists and Password is correct
-    authKey(){},
+    authKey(key, password, callback){
+        client.HGET(key,"password", function(err, data){
+            if(err){ if(typeof callback == "function"){ return callback(err, null); } else { return false; } }
+            if(password == data){
+                if(typeof callback == "function"){ return callback(null, true); } else { return true; }
+            } else {
+                if(typeof callback == "function"){ return callback(err, null); } else { return false; }
+            }
+        });
+    },
 
     // Request to remove a key
     deleteKeyReq(key, password){
