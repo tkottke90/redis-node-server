@@ -6,6 +6,8 @@ var root = "";
     var express = require('express');
     var bparse = require('body-parser');
     var fs = require('fs');
+    
+    var cypher = require('crypto');
 
     var redis = require('redis');
 
@@ -426,12 +428,15 @@ var root = "";
         createDeleteLog();
 
         // Test  #####################################################################################################################################
-            var key = "9a0322a30561471dccd4dca81e"
-            var password = "12345";
+            var key = "684a41985112c92618c737499a"
+            var password = "1234";
             
+            var hash = cypher.createHmac('sha256', password).update('Node.js').digest('hex');
+            console.log(hash);
+
             console.log(`Key: ${key} - Password: ${password}`)
             // Add Data
-            auth.authKey(key,"12345", function(err, res){
+            auth.authKey(key,password, function(err, res){
                 // If Error, log error
                 if(err){ 
                     SMC.getMessage(1,5,`Error Authorizing Key: ${err}`); 
@@ -440,8 +445,8 @@ var root = "";
                     //
                 }
                 // If authorization is successful, update data and last modified field
-                else if(auth){
-                    client.HMSET(key,["Data", JSON.stringify({ "Number" : 1 }) , "Date_Last_Mod" , new Date().valueOf()], function(err){
+                else if(res){
+                    client.HMSET(key,["Data", JSON.stringify({ "Number" : 4 }) , "Date_Last_Mod" , new Date().valueOf()], function(err){
                         if(err){ console.log(err); }
                     });
                 // If authorization in unsuccessful, respond with failure and update key security log for auditing
@@ -460,7 +465,10 @@ var root = "";
                                     var timestamp = new Date().valueOf();
                                     secure[timestamp] = `Failed Authorization Request - Attempted Password: ${password}`;
 
-                                    client.HSET(key,"Security",JSON.stringify(secure),function(err){ if(err){ console.log(err) } });
+                                    client.HSET(key,[
+                                                        "Security",JSON.stringify(secure),
+                                                        "Date_Last_Mod", new Date().valueOf()
+                                                ],function(err){ if(err){ console.log(err) } });
                                 } else {
                                     var timestamp = new Date().valueOf();
                                     data = JSON.parse(data);

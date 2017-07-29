@@ -12,6 +12,7 @@
 
 // Import Modules
 var path = require("path"),
+    cypher = require("crypto"),
     smc = require("./server-message-creator.js"),
     redis = require("./redis-module.js"),
     mailer = require("express-mailer");
@@ -45,6 +46,7 @@ module.exports = {
 
     // Generates a New Key and adds it to the Redis DB and returns the key
     newKey(email, password, callback){
+        // Generate New Key
         var key = "", counter = 0;
         do{
             key = generateKey(26);
@@ -54,7 +56,11 @@ module.exports = {
                 smc.getMessage(1,7,"Long Running Key Generation");
             }
         }while(keyExsists(key));
-
+        
+        //
+        // TO-DO: Encrypt Password
+        //
+        
         var value = {  };
 
         client.hmset(key,
