@@ -128,6 +128,8 @@ module.exports = {
 
     // Verify Key Exists and Password is correct
     authKey(key, password, callback){
+        var hash = cypher.createHmac('sha256', password).update('kottke').digest('hex');
+
         client.HGET(key,"password", function(err, data){
             if(err){ if(typeof callback == "function"){ return callback(err, null); } else { return false; } }
             if(password == data){

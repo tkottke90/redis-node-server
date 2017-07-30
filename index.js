@@ -8,6 +8,7 @@ var root = "";
     var fs = require('fs');
     
     var cypher = require('crypto');
+    var bcrypt = require('bcrypt-node');
 
     var redis = require('redis');
 
@@ -431,8 +432,11 @@ var root = "";
             var key = "684a41985112c92618c737499a"
             var password = "1234";
             
+            var blowfish = bcrypt.hashSync(password,null,null);
+            console.log(`blowfish: ${blowfish}`);
+
             var hash = cypher.createHmac('sha256', password).update('Node.js').digest('hex');
-            console.log(hash);
+            console.log(`hash : ${hash}`);
 
             console.log(`Key: ${key} - Password: ${password}`)
             // Add Data

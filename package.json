@@ -6,6 +6,7 @@
         "start": "node index.js"
     },
     "dependencies": {
+        "bcrypt-node": "^0.1.0",
         "body-parser": "^1.15.2",
         "express": "^4.15.3",
         "express-mailer": "^0.3.1",
