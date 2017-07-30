@@ -40,6 +40,8 @@ var temp_keys = [];
 // Variables
     var client = redis.client;
 
+    var encryptionKey = "Node.js";
+
 module.exports = {
 
     keyRequest(){},
@@ -59,7 +61,12 @@ module.exports = {
         
         
         // TO-DO: Encrypt Password
-        password = crypto.createHmac('sha3', password);
+        var salt = generateKey(10);      
+        password = crypto.createHmac('sha512', encryptionKey).update(password + salt).digest('hex');
+        var pass = {
+            "salt" : salt,
+            "password" :  password
+        };  
         //
         
         var value = {  };
@@ -68,7 +75,7 @@ module.exports = {
             [
                 'name', '',
                 'User_Email', email,
-                'password', password,
+                'password', pass,
                 'expire', '-1',
                 "Date_Create", new Date().valueOf().toString(),
                 "Date_Last_Mod", new Date().valueOf().toString(),
@@ -129,14 +136,36 @@ module.exports = {
 
     // Verify Key Exists and Password is correct
     authKey(key, password, callback){
-
-
         client.HGET(key,"password", function(err, data){
-            if(err){ if(typeof callback == "function"){ return callback(err, null); } else { return false; } }
-            if(password == data){
-                if(typeof callback == "function"){ return callback(null, true); } else { return true; }
-            } else {
-                if(typeof callback == "function"){ return callback(err, null); } else { return false; }
+            if(err){ response(err,null); }
+            if(data){
+                // Get Stored Information
+                data  = JSON.parse(data);
+                var salt = data['salt'];
+                var storedPass = data['password'];
+
+                // Generate Encrypted Version of Entered Password
+                var hash = crypto.createHmac('sha512', encryptionKey).update(password+salt).digest('hex');
+
+                // Compare to Stored Password
+                if(storedPass === hash){
+                    response(null,true);    
+                } else {
+                    response(null,false);
+                }            
+            }
+
+            function response(err,result){ 
+                switch(typeof callback){
+                    case "function":
+                        if(err){ callback(err,null); }
+                        else{ callback(null, result); }
+                        break;
+                    default:
+                        if(err) { return `Error In Authorization: ${err}` } 
+                        else{ return result }
+                    }
+
             }
         });
     },
