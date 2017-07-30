@@ -8,8 +8,7 @@ var root = "";
     var fs = require('fs');
     
     var cypher = require('crypto');
-    var bcrypt = require('bcrypt-node');
-
+    
     var redis = require('redis');
 
     var SMC = require('./Modules/server-message-creator.js')
@@ -429,14 +428,11 @@ var root = "";
         createDeleteLog();
 
         // Test  #####################################################################################################################################
-            var key = "684a41985112c92618c737499a"
-            var password = "1234";
+        //auth.newKey('test@example.com',"0987",function(err, key){
+            var key = "684a41985112c92618c737499a";
+            var password = "0987";
             
-            var blowfish = bcrypt.hashSync(password,null,null);
-            console.log(`blowfish: ${blowfish}`);
 
-            var hash = cypher.createHmac('sha256', password).update('Node.js').digest('hex');
-            console.log(`hash : ${hash}`);
 
             console.log(`Key: ${key} - Password: ${password}`)
             // Add Data
@@ -485,6 +481,7 @@ var root = "";
                     });
                 }
             });
+        //});
         // #####################################################################################################################################
 
         SMC.getMessage(0,null,`Server started on port: ${port}`);
