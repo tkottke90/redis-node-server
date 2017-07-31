@@ -35,31 +35,9 @@ var root = "";
     }
 
     /**
-     * Method used to start monitoring of Redis DB
-     * 
-     * - response connection set to close to keep the connection from attempting to re-send the
-     */
-    app.get(`${root}/redis/monitor/start`, function(req, res){
-        var rm_response = RM.redisMonitor("start");
-        res.set('Connection', 'close');
-        
-        rm_response == "OK" ? res.send('OK') : res.send(rm_response);
-    });
-
-    /**
-     * Method used to stop monitoring featur in Redis DB
-     */
-    app.get(`${root}/redis/monitor/end`, function(req, res){
-        
-        RM.redisMonitor("shutdown"); 
-        res.set('Connection' , 'close');
-        res.send('OK')
-    });
-
-    /**
      * Method to get value assodiated with key from Redis DB as a JSON Object
      */
-    app.get(`${root}/redis/get/json/:key`, function(req, res){
+    app.get(`${root}/redis/json/:key`, function(req, res){
         // Get param variables
         var key = req.params.key;
 
@@ -81,7 +59,7 @@ var root = "";
     /**
      * Method to get value associated with key from Redis DB
      */
-    app.get(`${root}/redis/get/:key`,function(req,res){
+    app.get(`${root}/redis/:key`,function(req,res){
         SMC.getMessage(1,0,`Request for key: ${req.params.key}`)
         client.get(req.params.key,function(err, data){
             if(err){
@@ -110,7 +88,7 @@ var root = "";
      *  }
      * 
      */
-    app.put(`${root}/redis/put/json`, function(req, res){
+    app.put(`${root}/redis/json`, function(req, res){
         // Set Response Header Info
         res.set('Connection', 'close');
 
@@ -154,7 +132,7 @@ var root = "";
     /**
      * Method will put a new entry into the Redis DB from the new information in the uri
      */
-    app.put(`${root}/redis/put/:key.:value`, function(req,res){
+    app.put(`${root}/redis/:key.:value`, function(req,res){
         
         res.set('Connection', 'close');
         SMC.getMessage(1,2,`Request to add => ${body.key} : ${body.value}`);
@@ -190,7 +168,7 @@ var root = "";
      *      "overwrite" : <boolean>
      *  }
      */
-    app.post(`${root}/redis/post/json`, function(req, res){
+    app.post(`${root}/redis/json`, function(req, res){
         // Set Response Header Info
         res.set('Connection', 'close');
 
@@ -239,7 +217,7 @@ var root = "";
         });
     }); 
 
-    app.post(`${root}/redis/post/:key.:value.:overwrite`, function(req, res){
+    app.post(`${root}/redis/:key.:value.:overwrite`, function(req, res){
         SMC.getMessage(1,3,`Request to add => ${body.key} : ${body.value}`);
         // Get Values from URI
         var key = req.params.key, 
@@ -273,7 +251,7 @@ var root = "";
      * Once the data has been collected using the Get command, writing the data to the delete log and deleting
      * from the DB are run as separate as they do not depend on each other to complete
      */
-    app.delete(`${root}/redis/delete/:key`, function(req, res){
+    app.delete(`${root}/redis/:key`, function(req, res){
         client.get(req.params.key, function(err, data){
             if(err){ res.status(500).jsonp({ error : "Error in get" }) }
             
