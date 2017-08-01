@@ -56,6 +56,10 @@ module.exports = {
 
             if(counter > 10){
                 smc.getMessage(1,7,"Long Running Key Generation");
+            } else if(counter > 5000){ 
+                smc.getMessage(1,7,"Aborting Key Generation - Too Many Attempts")
+                if(typeof callback == 'function') {return callback("Error - Too Many Key Gen Attempts", null);}
+                else { return "OK"; }
             }
         }while(keyExsists(key));
         
@@ -154,20 +158,20 @@ module.exports = {
                     response(null,false);
                 }            
             }
-
-            function response(err,result){ 
-                switch(typeof callback){
-                    case "function":
-                        if(err){ callback(err,null); }
-                        else{ callback(null, result); }
-                        break;
-                    default:
-                        if(err) { return `Error In Authorization: ${err}` } 
-                        else{ return result }
-                    }
-
-            }
         });
+
+        function response(err,result){ 
+            switch(typeof callback){
+                case "function":
+                    if(err){ callback(err,null); }
+                    else{ callback(null, result); }
+                    break;
+                default:
+                    if(err) { return `Error In Authorization: ${err}` } 
+                    else{ return result }
+                }
+
+        }
     },
 
     // Request to remove a key

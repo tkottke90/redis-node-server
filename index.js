@@ -406,61 +406,54 @@ var root = "";
         createDeleteLog();
 
         // Test  #####################################################################################################################################
-        //auth.newKey('test@example.com',"0987",function(err, key){
-            var key = "684a41985112c92618c737499a";
-            var password = "0987";
-            
 
-
-            console.log(`Key: ${key} - Password: ${password}`)
-            // Add Data
-            auth.authKey(key,password, function(err, res){
-                // If Error, log error
-                if(err){ 
-                    SMC.getMessage(1,5,`Error Authorizing Key: ${err}`); 
-                    //
-                    //  TO-DO: Return Error
-                    //
-                }
-                // If authorization is successful, update data and last modified field
-                else if(res){
-                    client.HMSET(key,["Data", JSON.stringify({ "Number" : 4 }) , "Date_Last_Mod" , new Date().valueOf()], function(err){
-                        if(err){ console.log(err); }
-                    });
-                // If authorization in unsuccessful, respond with failure and update key security log for auditing
-                } else { 
-                    // Report failure to server log
-                    SMC.getMessage(1,5,`Incorect Password Entered for Key: ${key}`)
-                    // Check if key has existing security hash
-                    client.exists(key, function(err, exists){
-                        if(err) { console.log(err); }
-                        else if(exists){
-                            // If security exists, read/write new entry to log
-                            client.HGET(key,"Security", function(err, data){
-                                if(err){ console.log(`Error updating Security log for ${key}`); }
-                                else if(data == null){
-                                    var secure = {};
-                                    var timestamp = new Date().valueOf();
-                                    secure[timestamp] = `Failed Authorization Request - Attempted Password: ${password}`;
-
-                                    client.HSET(key,[
-                                                        "Security",JSON.stringify(secure),
-                                                        "Date_Last_Mod", new Date().valueOf()
-                                                ],function(err){ if(err){ console.log(err) } });
-                                } else {
-                                    var timestamp = new Date().valueOf();
-                                    data = JSON.parse(data);
-                                    data[timestamp] = `Failed Authorization Request - Attempted Password: ${password}`;
-                                    
-                                    client.HSET(key, "Security", JSON.stringify(data), function(err){ if(err){ console.log(err) } });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        //});
         // #####################################################################################################################################
 
         SMC.getMessage(0,null,`Server started on port: ${port}`);
     });
+
+    //      auth.authKey(key,password, function(err, res){
+    //             // If Error, log error
+    //             if(err){ 
+    //                 SMC.getMessage(1,5,`Error Authorizing Key: ${err}`); 
+    //                 //
+    //                 //  TO-DO: Return Error
+    //                 //
+    //             }
+    //             // If authorization is successful, update data and last modified field
+    //             else if(res){
+    //                 client.HMSET(key,["Data", JSON.stringify({ "Number" : 4 }) , "Date_Last_Mod" , new Date().valueOf()], function(err){
+    //                     if(err){ console.log(err); }
+    //                 });
+    //             // If authorization in unsuccessful, respond with failure and update key security log for auditing
+    //             } else { 
+    //                 // Report failure to server log
+    //                 SMC.getMessage(1,5,`Incorect Password Entered for Key: ${key}`)
+    //                 // Check if key has existing security hash
+    //                 client.exists(key, function(err, exists){
+    //                     if(err) { console.log(err); }
+    //                     else if(exists){
+    //                         // If security exists, read/write new entry to log
+    //                         client.HGET(key,"Security", function(err, data){
+    //                             if(err){ console.log(`Error updating Security log for ${key}`); }
+    //                             else if(data == null){
+    //                                 var secure = {};
+    //                                 var timestamp = new Date().valueOf();
+    //                                 secure[timestamp] = `Failed Authorization Request - Attempted Password: ${password}`;
+
+    //                                 client.HMSET(key,[
+    //                                                     "Security",JSON.stringify(secure),
+    //                                                     "Date_Last_Mod", new Date().valueOf()
+    //                                             ],function(err){ if(err){ console.log(err) } });
+    //                             } else {
+    //                                 var timestamp = new Date().valueOf();
+    //                                 data = JSON.parse(data);
+    //                                 data[timestamp] = `Failed Authorization Request - Attempted Password: ${password}`;
+                                    
+    //                                 client.HSET(key, "Security", JSON.stringify(data), function(err){ if(err){ console.log(err) } });
+    //                             }
+    //                         });
+    //                     }
+    //                 });
+    //             }
+    //         });
