@@ -3,13 +3,14 @@
 var root = "";
 
 // Import Modules
-    var express = require('express');
-    var bparse = require('body-parser');
     var fs = require('fs');
-    
     var cypher = require('crypto');
+    var https = require('https');
+    var url = require('url');
     
     var redis = require('redis');
+    var express = require('express');
+    var bparse = require('body-parser');
 
     var SMC = require('./Modules/server-message-creator.js')
     var RM = require('./Modules/redis-module.js');
@@ -38,22 +39,23 @@ var root = "";
      * Method to get value assodiated with key from Redis DB as a JSON Object
      */
     app.get(`${root}/redis/json/:key`, function(req, res){
-        // Get param variables
-        var key = req.params.key;
 
-        SMC.getMessage(1,0,`Request for key: ${key}`)
-        client.get(key,function(err, data){
-            if(err){
-                SMC.getMessage(1,5,`Error in GET Request: ${err}`);
-                res.status(500).jsonp({error : "Error in DB Request"});
-            } else {
-                var jsonOut = {};
-                jsonOut[key] = data;
+            // Get param variables
+            var key = req.params.key;
 
-                SMC.getMessage(1,0,`Request Completed for ${key}`)
-                res.status(200).jsonp(jsonOut);
-            }
-        });
+            SMC.getMessage(1,0,`Request for key: ${key}`)
+            client.get(key,function(err, data){
+                if(err){
+                    SMC.getMessage(1,5,`Error in GET Request: ${err}`);
+                    res.status(500).jsonp({error : "Error in DB Request"});
+                } else {
+                    var jsonOut = {};
+                    jsonOut[key] = data;
+
+                    SMC.getMessage(1,0,`Request Completed for ${key}`)
+                    res.status(200).jsonp(jsonOut);
+                }
+            });
     });
 
     /**
@@ -348,6 +350,14 @@ var root = "";
         SMC.getMessage(0,null,"Connection Check to Redis-Node.JS Server");
         var nodeVersion = "v7.6.0";
 
+        var reqAuth = req.headers['authorization'];
+        if(reqAuth){
+            console.log(`Authorization Header is: ${reqAuth}`);
+            var buf = new Buffer(reqAuth.split(' ')[1], 'base64');
+            var plain_auth = buf.toString();
+            console.log(`Decoded Authorization: ${plain_auth}`);
+            console.log(`Credentials: \n  Username: ${plain_auth.split(':')[0]}\n  Password: ${plain_auth.split(':')[1]}`);
+        } else { console.log("No Authorization Parameter Sent"); }
         res.json({
             "Message" : "Connection Successful",
             "Server Info" : {
@@ -412,6 +422,7 @@ var root = "";
         SMC.getMessage(0,null,`Server started on port: ${port}`);
     });
 
+// Archive    
     //      auth.authKey(key,password, function(err, res){
     //             // If Error, log error
     //             if(err){ 
